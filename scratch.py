@@ -6,7 +6,7 @@ import seaborn as sns
 import scipy.stats as sts
 import matplotlib.pyplot as plt
 
-fin = '/Users/jeffreymason/Documents/data/datasets/ufs_violins_all_data.csv'
+fin = r'D:\docs\data\datasets\ufs_violins_all_data_since_240512.csv'
 with open(fin, 'r', encoding='utf-8') as f:
     lines = [re.sub(r'\n', r'', line).split(',') for line in f.readlines()]
 headers = lines[0]
@@ -38,22 +38,28 @@ for gpn_010 in tc_by_gpn_by_org.keys():
 
 # let's look at some cycle time (prepare plus main) qq plots by org
 for gpn_010 in common.keys():
+    tc_max = 0
+    tc_min = 9999
     for org in common[gpn_010].keys():
         ufs_labels = sorted(common[gpn_010][org].keys())
         common[gpn_010][org]['by_ufs'] = [common[gpn_010][org][ufs] for ufs in ufs_labels]
+        tc_max = max([max(common[gpn_010][org][ufs]) for ufs in ufs_labels]) if max([max(common[gpn_010][org][ufs]) for ufs in ufs_labels]) > tc_max else tc_max
+        tc_min = min([min(common[gpn_010][org][ufs]) for ufs in ufs_labels]) if min([min(common[gpn_010][org][ufs]) for ufs in ufs_labels]) < tc_min else tc_min
         common[gpn_010][org]['labels'] = ufs_labels
 
-    colors = ['lightcoral', 'sienna', 'cyan', 'deepskyblue', 'blue', 'darkorchid', 'fuchsia']
+    n_bins = 150
+    linspace_bins = np.linspace(tc_min, tc_max, n_bins)
+
+    colors = ['lightcoral', 'sienna', 'deepskyblue', 'cyan', 'blue', 'darkorchid', 'fuchsia']
     colors.reverse()
     ufs_colors = {ufs : colors.pop() for ufs in ufs_chips}
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(nrows=2, ncols=2)
     sts.probplot(tc_by_gpn_by_org[gpn_010]['G1'], dist="norm", plot=ax0)
     ax0.set_title(f"G1 {gpn_010} vs. Normal Dist.")
 
-    n_bins = 100
     labels = common[gpn_010]['G1']['labels']
     plot_colors = [ufs_colors[ufs] for ufs in labels]
-    n, g1_bins, patches = ax1.hist(common[gpn_010]['G1']['by_ufs'], n_bins, density=False, histtype='bar', color=plot_colors, label=labels, stacked=False)
+    n, g1_bins, patches = ax1.hist(common[gpn_010]['G1']['by_ufs'], linspace_bins, density=False, histtype='bar', color=plot_colors, label=labels, stacked=True)
     ax1.legend(prop={'size': 10})
     ax1.set_xlabel("Cycle Time (min)")
     ax1.set_title(f'G1 {gpn_010}')
@@ -63,7 +69,7 @@ for gpn_010 in common.keys():
 
     labels = common[gpn_010]['PL1']['labels']
     plot_colors = [ufs_colors[ufs] for ufs in labels]
-    ax3.hist(common[gpn_010]['PL1']['by_ufs'], g1_bins, density=False, histtype='bar', color=plot_colors, label=labels, stacked=False)
+    ax3.hist(common[gpn_010]['PL1']['by_ufs'], linspace_bins, density=False, histtype='bar', color=plot_colors, label=labels, stacked=True)
     ax3.legend(prop={'size': 10})
     ax3.set_xlabel("Cycle Time (min)")
     ax3.set_title(f'PL1 {gpn_010}')
