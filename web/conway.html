@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Conway's Game of Life</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; margin: 0; background-color: #000; color: white; font-family: Arial, sans-serif; }
+        canvas { border: 1px solid #ccc; margin: 20px 0; cursor: pointer; }
+        .controls { display: flex; gap: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div class="controls">
+        <button id="startButton">Start</button>
+        <button id="stopButton">Stop</button>
+        <button id="clearButton">Clear</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const rows = 25;
+        const cols = 25;
+        const cellSize = canvas.width / cols;
+        let grid = createGrid();
+        let running = false;
+        let interval = 500; // Speed: 500ms between updates
+        let animationId;
+
+        // Function to create an empty grid
+        function createGrid() {
+            return new Array(rows).fill(null).map(() => new Array(cols).fill(false));
+        }
+
+        // Function to draw the grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    ctx.beginPath();
+                    ctx.rect(col * cellSize, row * cellSize, cellSize, cellSize);
+                    ctx.fillStyle = grid[row][col] ? '#00FF00' : '#000';
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Function to get the number of alive neighbors for a cell
+        function getNeighborCount(row, col) {
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],         [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+            return directions.reduce((count, [dx, dy]) => {
+                const newRow = row + dx;
+                const newCol = col + dy;
+                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+                    return count + (grid[newRow][newCol] ? 1 : 0);
+                }
+                return count;
+            }, 0);
+        }
+
+        // Function to update the grid to the next generation
+        function updateGrid() {
+            const newGrid = createGrid();
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const neighbors = getNeighborCount(row, col);
+                    if (grid[row][col]) {
+                        // Alive cell: survives if 2 or 3 neighbors are alive
+                        newGrid[row][col] = neighbors === 2 || neighbors === 3;
+                    } else {
+                        // Dead cell: becomes alive if exactly 3 neighbors are alive
+                        newGrid[row][col] = neighbors === 3;
+                    }
+                }
+            }
+            grid = newGrid;
+            drawGrid();
+        }
+
+        // Function to start the simulation
+        function startSimulation() {
+            if (running) return;
+            running = true;
+            function step() {
+                if (running) {
+                    updateGrid();
+                    animationId = setTimeout(step, interval);
+                }
+            }
+            step();
+        }
+
+        // Function to stop the simulation
+        function stopSimulation() {
+            running = false;
+            clearTimeout(animationId);
+        }
+
+        // Function to clear the grid
+        function clearGrid() {
+            grid = createGrid();
+            drawGrid();
+        }
+
+        // Function to toggle a cell's state on click
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const col = Math.floor(x / cellSize);
+            const row = Math.floor(y / cellSize);
+            grid[row][col] = !grid[row][col]; // Toggle cell state
+            drawGrid();
+        });
+
+        // Hook up buttons
+        document.getElementById('startButton').addEventListener('click', startSimulation);
+        document.getElementById('stopButton').addEventListener('click', stopSimulation);
+        document.getElementById('clearButton').addEventListener('click', () => {
+            stopSimulation();
+            clearGrid();
+        });
+
+        // Initial draw
+        drawGrid();
+    </script>
+</body>
+</html>

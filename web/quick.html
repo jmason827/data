@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rotating Wireframe Cube</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Include Three.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <!-- Include OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Set up the scene, camera, and renderer
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); // Black background
+
+        var camera = new THREE.PerspectiveCamera(
+            75, window.innerWidth / window.innerHeight, 0.1, 1000
+        );
+        camera.position.z = 5;
+
+        var renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Add a bright green wireframe cube
+        var geometry = new THREE.BoxGeometry();
+        var material = new THREE.MeshBasicMaterial({
+            color: 0x00ff00, // Bright green color
+            wireframe: true
+        });
+        var cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        // Add OrbitControls for mouse interaction
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // Enable smooth inertia
+        controls.dampingFactor = 0.1;
+        controls.rotateSpeed = 1.0;
+        controls.enableZoom = false; // Disable zooming
+        controls.enablePan = false;  // Disable panning
+
+        // Handle window resizing
+        window.addEventListener('resize', function() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Update controls for inertia
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

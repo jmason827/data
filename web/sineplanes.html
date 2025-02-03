@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Three.js Waves + Noise</title>
+<style>
+  body {
+    background: #000;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: sans-serif;
+    color: #fff;
+  }
+  .controls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 5px;
+  }
+  .controls label {
+    margin-right: 15px;
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <label>
+    Noise Amplitude:
+    <input id="noiseAmplitude" type="range" min="0" max="0.5" step="0.01" value="0.1" />
+    <span id="noiseVal">0.1</span>
+  </label>
+</div>
+
+<canvas id="glcanvas" width="800" height="600"></canvas>
+<!-- Include Three.js library -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+<!-- Include OrbitControls -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+<!-- Use ES Modules for Three.js and OrbitControls -->
+<script>
+
+(function() {
+    const noiseSlider = document.getElementById('noiseAmplitude');
+    const noiseValSpan = document.getElementById('noiseVal');
+
+    noiseSlider.addEventListener('input', () => {
+        noiseValSpan.textContent = noiseSlider.value;
+    });
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 10);
+    camera.position.set(0,0.5,2);
+
+    const renderer = new THREE.WebGLRenderer({antialias:true, canvas: document.getElementById('glcanvas')});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    const N = 50;
+    const geometry = new THREE.PlaneGeometry(2,2,N-1,N-1);
+    const material = new THREE.MeshBasicMaterial({color:0x00ffff, wireframe:true});
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // Store initial positions
+    const initialPositions = geometry.attributes.position.array.slice();
+
+    // Pseudo-random function for noise
+    function rand(x, y) {
+        let s = Math.sin(x*12.9898 + y*78.233)*43758.5453;
+        s = s - Math.floor(s);
+        return s;
+    }
+
+    let time = 0;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        time += 0.01;
+
+        const noiseAmp = parseFloat(noiseSlider.value);
+        const pos = geometry.attributes.position.array;
+
+        for (let i=0; i<pos.length; i+=3) {
+            let ox = initialPositions[i];
+            let oy = initialPositions[i+1];
+
+            let freq = 5.0;
+            let baseWave = Math.sin((ox*freq + oy*freq) + time) * 0.1;
+            let n = rand(ox*freq, oy*freq);
+            let noise = (n - 0.5)*noiseAmp;
+            let z = baseWave + noise;
+            pos[i+2] = z;
+        }
+        geometry.attributes.position.needsUpdate = true;
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+    });
+
+    animate();
+})();
+</script>
+</body>
+</html>

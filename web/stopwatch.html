@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>HTTP Request with Stopwatch</title>
+    <style>
+        #stopwatch {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            background-color: #eee;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        #goButton {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        #response {
+            margin-top: 20px;
+            font-size: 18px;
+            max-width: 600px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>HTTP Request with Stopwatch</h1>
+    <button id="goButton">Go</button>
+    <div id="stopwatch">0.0 s</div>
+    <div id="response"></div>
+    <script>
+        document.getElementById('goButton').addEventListener('click', function() {
+            // Disable the button to prevent multiple clicks
+            this.disabled = true;
+            // Clear previous response
+            document.getElementById('response').textContent = 'Sending request...';
+            // Start the stopwatch
+            startStopwatch();
+            
+            // Send HTTP request
+            sendHttpRequest()
+                .then(response => {
+                    // Display response
+                    document.getElementById('response').textContent = 'Response received:\n' + response;
+                })
+                .catch(error => {
+                    // Handle error
+                    document.getElementById('response').textContent = 'Error: ' + error;
+                })
+                .finally(() => {
+                    // Stop the stopwatch
+                    stopStopwatch();
+                    // Re-enable the button
+                    document.getElementById('goButton').disabled = false;
+                });
+        });
+
+        let startTime;
+        let stopwatchInterval;
+
+        function startStopwatch() {
+            startTime = Date.now();
+            document.getElementById('stopwatch').textContent = '0.0 s';
+            stopwatchInterval = setInterval(function() {
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('stopwatch').textContent = elapsed + ' s';
+            }, 100);
+        }
+
+        function stopStopwatch() {
+            clearInterval(stopwatchInterval);
+        }
+
+        function sendHttpRequest() {
+            return fetch('https://api.chucknorris.io/jokes/random')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP error! status: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    return data.value;
+                });
+        }
+    </script>
+</body>
+</html>

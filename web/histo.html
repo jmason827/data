@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Titanic Age Histogram with Interactive Table</title>
+  <!-- Include Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
+    #tableContainer {
+      width: 30%;
+      margin-right: 20px;
+    }
+    #chartContainer {
+      width: 60%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    #infoText {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Titanic Age Histogram</h1>
+  <div id="container">
+    <div id="tableContainer">
+      <h2>Passengers in Selected Age Group</h2>
+      <div id="infoText">Click on a bar in the histogram to see details.</div>
+      <table id="passengerTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Fare</th>
+            <th>Sex</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Rows will be added here -->
+        </tbody>
+      </table>
+    </div>
+    <div id="chartContainer">
+      <canvas id="myChart"></canvas>
+    </div>
+  </div>
+  <script>
+    let data = [];
+    let chart;
+    const binSize = 10; // Adjust the bin size as needed
+
+    // Load the Titanic dataset
+    fetch("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
+      .then(response => response.text())
+      .then(csvText => {
+        data = parseCSV(csvText);
+        createHistogram(data);
+      })
+      .catch(error => {
+        console.error('Error loading dataset:', error);
+      });
+
+    // Function to parse CSV text into an array of objects
+    function parseCSV(csvText) {
+      const lines = csvText.trim().split('\n');
+      const headers = lines[0].split(',');
+
+      return lines.slice(1).map(line => {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && (i === 0 || line[i - 1] !== '\\')) {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current);
+
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = values[index];
+        });
+        return obj;
+      });
+    }
+
+    // Function to create the histogram
+    function createHistogram(data) {
+      // Extract numeric Age data
+      const ageData = data
+        .map(d => parseFloat(d['Age']))
+        .filter(age => !isNaN(age));
+
+      // Calculate bins
+      const minAge = Math.min(...ageData);
+      const maxAge = Math.max(...ageData);
+      const binWidth = (maxAge - minAge) / binSize;
+      const bins = new Array(binSize).fill(0);
+      const labels = [];
+
+      for (let i = 0; i < binSize; i++) {
+        const start = minAge + i * binWidth;
+        const end = start + binWidth;
+        labels.push(`${start.toFixed(1)} - ${end.toFixed(1)}`);
+      }
+
+      // Count frequencies
+      ageData.forEach(value => {
+        let index = Math.floor((value - minAge) / binWidth);
+        if (index >= binSize) index = binSize - 1; // Edge case
+        bins[index]++;
+      });
+
+      // Create the chart
+      const ctx = document.getElementById('myChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Passengers',
+            data: bins,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+          }]
+        },
+        options: {
+          responsive: true,
+          onClick: chartClickHandler,
+          scales: {
+            x: {
+              ticks: {
+                autoSkip: false,
+                maxRotation: 90,
+                minRotation: 45
+              },
+              title: {
+                display: true,
+                text: 'Age Range'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Passengers'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Event handler for chart click
+    function chartClickHandler(event, elements) {
+      if (elements.length > 0) {
+        const clickedElementIndex = elements[0].index;
+        const binRange = chart.data.labels[clickedElementIndex];
+        const [startStr, endStr] = binRange.split(' - ');
+        const start = parseFloat(startStr);
+        const end = parseFloat(endStr);
+
+        // Filter data to get passengers in the selected age group
+        const filteredData = data.filter(d => {
+          const age = parseFloat(d['Age']);
+          return !isNaN(age) && age >= start && age < end;
+        });
+
+        // Populate the table
+        populateTable(filteredData);
+      }
+    }
+
+    // Function to populate the table
+    function populateTable(passengers) {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = ''; // Clear previous data
+
+      passengers.forEach(d => {
+        const row = document.createElement('tr');
+
+        const nameCell = document.createElement('td');
+        nameCell.textContent = d['Name'];
+        row.appendChild(nameCell);
+
+        const fareCell = document.createElement('td');
+        fareCell.textContent = d['Fare'];
+        row.appendChild(fareCell);
+
+        const sexCell = document.createElement('td');
+        sexCell.textContent = d['Sex'];
+        row.appendChild(sexCell);
+
+        tableBody.appendChild(row);
+      });
+
+      // Show the table
+      document.getElementById('passengerTable').style.display = 'table';
+
+      // Update info text
+      document.getElementById('infoText').textContent = `Showing ${passengers.length} passengers`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>State Machine Combination Lock</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 50px;
+    }
+    #lock {
+      font-size: 100px;
+      margin-bottom: 20px;
+    }
+    .keypad {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 60px);
+      gap: 10px;
+    }
+    .keypad button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="lock">🔒</div>
+  <div class="keypad">
+    <button data-digit="1">1</button>
+    <button data-digit="2">2</button>
+    <button data-digit="3">3</button>
+    <button data-digit="4">4</button>
+    <button data-digit="5">5</button>
+    <button data-digit="6">6</button>
+    <button data-digit="7">7</button>
+    <button data-digit="8">8</button>
+    <button data-digit="9">9</button>
+    <button disabled></button>
+    <button data-digit="0">0</button>
+    <button id="reset">↺</button>
+  </div>
+  <div id="message">Enter the code to unlock</div>
+
+  <script>
+    // Define the state machine for the combination lock
+    (function() {
+      const lock = document.getElementById('lock');
+      const message = document.getElementById('message');
+      const keypad = document.querySelector('.keypad');
+      const buttons = keypad.querySelectorAll('button[data-digit]');
+      const resetButton = document.getElementById('reset');
+
+      // The correct combination sequence
+      const combination = ['1', '2', '3', '4'];
+      let currentState = 0;
+
+      // Event handler for keypad buttons
+      function handleKeypadClick(event) {
+        const digit = event.target.getAttribute('data-digit');
+
+        if (digit === combination[currentState]) {
+          currentState++;
+          if (currentState === combination.length) {
+            unlock();
+          } else {
+            message.textContent = 'Correct so far...';
+          }
+        } else {
+          reset();
+          message.textContent = 'Incorrect code. Try again.';
+        }
+      }
+
+      // Unlock the lock
+      function unlock() {
+        lock.textContent = '🔓';
+        message.textContent = 'Unlocked!';
+        buttons.forEach(button => button.disabled = true);
+      }
+
+      // Reset the state machine
+      function reset() {
+        currentState = 0;
+        message.textContent = 'Enter the code to unlock';
+      }
+
+      // Add event listeners to keypad buttons
+      buttons.forEach(button => {
+        button.addEventListener('click', handleKeypadClick);
+      });
+
+      // Add event listener to reset button
+      resetButton.addEventListener('click', () => {
+        buttons.forEach(button => button.disabled = false);
+        lock.textContent = '🔒';
+        reset();
+      });
+    })();
+  </script>
+
+</body>
+</html>

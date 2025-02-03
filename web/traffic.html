@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interacting State Machines - Traffic Lights Simulation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    .intersection {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 50px;
+    }
+    .traffic-light {
+      width: 100px;
+      height: 250px;
+      background-color: #333;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .light {
+      width: 80px;
+      height: 80px;
+      background-color: #555;
+      border-radius: 50%;
+      margin: 10px auto;
+    }
+    .light.red {
+      background-color: #555;
+    }
+    .light.yellow {
+      background-color: #555;
+    }
+    .light.green {
+      background-color: #555;
+    }
+    .light.on {
+      box-shadow: 0 0 20px 5px;
+    }
+    .light.red.on {
+      background-color: red;
+    }
+    .light.yellow.on {
+      background-color: yellow;
+    }
+    .light.green.on {
+      background-color: green;
+    }
+    #log {
+      margin-top: 30px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    #log h2 {
+      margin-top: 0;
+    }
+    #startButton {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Traffic Lights Simulation - Interacting State Machines</h1>
+  <button id="startButton">Start Simulation</button>
+
+  <div class="intersection">
+    <div id="lightA" class="traffic-light">
+      <div class="light red" id="lightA_red"></div>
+      <div class="light yellow" id="lightA_yellow"></div>
+      <div class="light green" id="lightA_green"></div>
+    </div>
+    <div id="lightB" class="traffic-light">
+      <div class="light red" id="lightB_red"></div>
+      <div class="light yellow" id="lightB_yellow"></div>
+      <div class="light green" id="lightB_green"></div>
+    </div>
+  </div>
+
+  <div id="log">
+    <h2>State Transitions Log:</h2>
+    <ul id="logList"></ul>
+  </div>
+
+  <script>
+    (function() {
+      const startButton = document.getElementById('startButton');
+      const logList = document.getElementById('logList');
+
+      // Traffic Light Class
+      const TrafficLight = function(name, redLight, yellowLight, greenLight) {
+        this.name = name;
+        this.redLight = redLight;
+        this.yellowLight = yellowLight;
+        this.greenLight = greenLight;
+      };
+
+      TrafficLight.prototype.turnOn = function(color) {
+        this.turnOffAll();
+        if (color === 'RED') {
+          this.redLight.classList.add('on');
+        } else if (color === 'YELLOW') {
+          this.yellowLight.classList.add('on');
+        } else if (color === 'GREEN') {
+          this.greenLight.classList.add('on');
+        }
+        this.logState(color);
+      };
+
+      TrafficLight.prototype.turnOffAll = function() {
+        this.redLight.classList.remove('on');
+        this.yellowLight.classList.remove('on');
+        this.greenLight.classList.remove('on');
+      };
+
+      TrafficLight.prototype.logState = function(state) {
+        const logItem = document.createElement('li');
+        logItem.textContent = `${this.name}: ${state}`;
+        logList.appendChild(logItem);
+        logList.scrollTop = logList.scrollHeight;
+      };
+
+      function startSimulation() {
+        startButton.disabled = true;
+        logList.innerHTML = '';
+
+        const lightA = new TrafficLight(
+          'Traffic Light A',
+          document.getElementById('lightA_red'),
+          document.getElementById('lightA_yellow'),
+          document.getElementById('lightA_green')
+        );
+
+        const lightB = new TrafficLight(
+          'Traffic Light B',
+          document.getElementById('lightB_red'),
+          document.getElementById('lightB_yellow'),
+          document.getElementById('lightB_green')
+        );
+
+        let cycleIndex = 0;
+        const cycle = [
+          // Phase 1: Light A GREEN, Light B RED
+          {
+            duration: 5000,
+            action: function() {
+              lightA.turnOn('GREEN');
+              lightB.turnOn('RED');
+            }
+          },
+          // Phase 2: Light A YELLOW, Light B RED
+          {
+            duration: 2000,
+            action: function() {
+              lightA.turnOn('YELLOW');
+              lightB.turnOn('RED');
+            }
+          },
+          // Phase 3: Both RED
+          {
+            duration: 1000,
+            action: function() {
+              lightA.turnOn('RED');
+              lightB.turnOn('RED');
+            }
+          },
+          // Phase 4: Light A RED, Light B GREEN
+          {
+            duration: 5000,
+            action: function() {
+              lightA.turnOn('RED');
+              lightB.turnOn('GREEN');
+            }
+          },
+          // Phase 5: Light A RED, Light B YELLOW
+          {
+            duration: 2000,
+            action: function() {
+              lightA.turnOn('RED');
+              lightB.turnOn('YELLOW');
+            }
+          },
+          // Phase 6: Both RED
+          {
+            duration: 1000,
+            action: function() {
+              lightA.turnOn('RED');
+              lightB.turnOn('RED');
+            }
+          },
+        ];
+
+        function nextPhase() {
+          const currentPhase = cycle[cycleIndex];
+          currentPhase.action();
+          cycleIndex = (cycleIndex + 1) % cycle.length;
+          setTimeout(nextPhase, currentPhase.duration);
+        }
+
+        nextPhase();
+      }
+
+      startButton.addEventListener('click', startSimulation);
+
+    })();
+  </script>
+
+</body>
+</html>
